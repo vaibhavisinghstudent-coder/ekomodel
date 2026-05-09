@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MSME Credit Intelligence — Eko</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --yellow:#F5A623;--yellow-light:#FFF8EC;--yellow-mid:#FEF0CC;--yellow-dark:#D4861A;
+  --bg:#FAFAF8;--white:#FFFFFF;--border:#E8E4DC;--border2:#D4CFC4;
+  --text:#2C2C2C;--text2:#555550;--muted:#888880;
+  --green:#1A9E5C;--green-bg:#EBF7F2;--red:#D63B3B;--red-bg:#FDF0F0;--amber:#C97B00;--amber-bg:#FFF4DC;
+  --sans:'Inter',sans-serif;--mono:'IBM Plex Mono',monospace;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh}
+
+/* ── NAV ── */
+nav{background:var(--white);border-bottom:1px solid var(--border);padding:0 40px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100}
+.nav-logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:20px;color:var(--yellow)}
+.nav-logo span{color:var(--text)}
+.nav-tag{font-family:var(--mono);font-size:10px;background:var(--yellow-light);color:var(--yellow-dark);border:1px solid var(--yellow-mid);border-radius:4px;padding:3px 8px;letter-spacing:.06em}
+
+/* ── MAIN LAYOUT ── */
+.page{max-width:960px;margin:0 auto;padding:40px 24px}
+
+/* ── HERO CARD ── */
+.hero{background:linear-gradient(135deg,var(--yellow) 0%,#FBBC45 100%);border-radius:16px;padding:36px 40px;margin-bottom:32px;position:relative;overflow:hidden}
+.hero::after{content:'';position:absolute;right:-40px;top:-40px;width:220px;height:220px;background:rgba(255,255,255,.1);border-radius:50%}
+.hero::before{content:'';position:absolute;right:60px;bottom:-60px;width:160px;height:160px;background:rgba(255,255,255,.07);border-radius:50%}
+.hero h1{font-size:26px;font-weight:700;color:#fff;letter-spacing:-.02em;margin-bottom:6px;position:relative;z-index:1}
+.hero p{color:rgba(255,255,255,.85);font-size:14px;position:relative;z-index:1}
+
+/* ── INPUT CARD ── */
+.input-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:28px;margin-bottom:20px}
+.section-label{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:16px}
+.field-label{font-size:12px;font-weight:500;color:var(--text2);margin-bottom:6px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:560px){.grid2{grid-template-columns:1fr}}
+input{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:13px;padding:11px 14px;outline:none;transition:border-color .2s}
+input:focus{border-color:var(--yellow)}
+input::placeholder{color:var(--muted)}
+.run-btn{width:100%;margin-top:16px;padding:15px;background:var(--yellow);border:none;border-radius:10px;color:#fff;font-family:var(--sans);font-size:15px;font-weight:600;cursor:pointer;letter-spacing:.01em;transition:background .2s,transform .1s}
+.run-btn:hover{background:var(--yellow-dark)}
+.run-btn:active{transform:scale(.99)}
+.run-btn:disabled{background:#ccc;cursor:not-allowed;transform:none}
+
+/* ── PIPELINE ── */
+.pipeline{display:none;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:20px}
+.pipeline.on{display:block}
+.pipe-steps{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.step{display:flex;align-items:center;gap:12px;padding:11px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;transition:all .3s;background:var(--bg)}
+.step.active{border-color:var(--yellow);background:var(--yellow-light)}
+.step.done{border-color:#A8DFC5;background:var(--green-bg)}
+.step-dot{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-family:var(--mono);font-weight:600;flex-shrink:0;background:var(--border);color:var(--muted);transition:all .3s}
+.step.active .step-dot{background:var(--yellow);color:#fff;animation:glow 1.2s ease-in-out infinite}
+.step.done .step-dot{background:var(--green);color:#fff}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(245,166,35,.5)}50%{box-shadow:0 0 0 6px rgba(245,166,35,0)}}
+.step-name{font-weight:500;color:var(--text)}
+.step-sub{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted)}
+
+/* ── ERROR ── */
+.err{display:none;background:var(--red-bg);border:1px solid #F5BFBF;border-radius:8px;padding:14px 18px;color:var(--red);font-size:13px;margin-bottom:16px;font-family:var(--mono)}
+.err.on{display:block}
+
+/* ════════════════════════════════
+   REPORT STYLES
+════════════════════════════════ */
+.report{display:none;margin-top:8px}
+.report.on{display:block}
+
+/* Report top bar */
+.report-topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.report-status{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--green)}
+.report-status::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--green)}
+.copy-btn{background:var(--white);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-family:var(--mono);font-size:11px;padding:6px 14px;cursor:pointer;transition:all .2s}
+.copy-btn:hover{border-color:var(--yellow);color:var(--yellow-dark)}
+
+/* Report shell */
+.report-shell{background:var(--white);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+
+/* Report header band */
+.report-header-band{background:linear-gradient(135deg,var(--yellow),#FBBC45);padding:28px 36px}
+.report-header-band .sector-tag{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:rgba(255,255,255,.8);text-transform:uppercase;margin-bottom:6px}
+.report-header-band h2{font-size:20px;font-weight:700;color:#fff;letter-spacing:-.01em;margin-bottom:4px}
+.report-header-band .meta{font-size:12px;color:rgba(255,255,255,.8)}
+.report-header-band .meta span{margin-right:16px}
+
+/* Score band */
+.score-band{display:grid;grid-template-columns:repeat(3,1fr);background:var(--yellow-light);border-bottom:1px solid var(--yellow-mid)}
+@media(max-width:600px){.score-band{grid-template-columns:1fr 1fr}}
+.score-cell{padding:18px 24px;border-right:1px solid var(--yellow-mid);text-align:center}
+.score-cell:last-child{border-right:none}
+.score-val{font-size:26px;font-weight:700;color:var(--yellow-dark);font-family:var(--mono);line-height:1}
+.score-val.green{color:var(--green)}
+.score-val.red{color:var(--red)}
+.score-val.amber{color:var(--amber)}
+.score-lbl{font-size:11px;color:var(--muted);margin-top:4px;font-family:var(--mono);letter-spacing:.04em}
+
+/* Report body */
+.report-body{padding:32px 36px}
+@media(max-width:600px){.report-body{padding:20px 18px}}
+
+/* Section headings */
+.r-section{margin-bottom:32px}
+.r-h{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.r-h-num{width:22px;height:22px;border-radius:5px;background:var(--yellow);color:#fff;font-size:11px;font-weight:700;font-family:var(--mono);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.r-h-title{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text);font-family:var(--mono)}
+.r-divider{height:1px;background:var(--border);margin-bottom:16px}
+
+/* Prose text */
+.r-prose{font-size:14px;line-height:1.75;color:var(--text2)}
+.r-prose p{margin-bottom:10px}
+.r-prose strong{color:var(--text);font-weight:600}
+
+/* Insight box */
+.insight-box{background:var(--yellow-light);border-left:3px solid var(--yellow);border-radius:0 8px 8px 0;padding:14px 18px;margin:14px 0;font-size:13px;color:var(--text);line-height:1.65}
+.insight-box .ins-label{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--yellow-dark);text-transform:uppercase;margin-bottom:5px;font-weight:600}
+
+/* Tables */
+.r-table-wrap{overflow-x:auto;margin-top:4px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead tr{background:var(--yellow-light)}
+thead th{padding:10px 14px;text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--yellow-dark);font-weight:600;border-bottom:2px solid var(--yellow-mid)}
+tbody tr{border-bottom:1px solid var(--border)}
+tbody tr:last-child{border-bottom:none}
+tbody tr:nth-child(even){background:#FAFAF6}
+tbody td{padding:10px 14px;color:var(--text2);vertical-align:top}
+tbody td:first-child{font-weight:500;color:var(--text)}
+
+/* Severity badges */
+.sev{display:inline-block;padding:2px 9px;border-radius:4px;font-size:11px;font-weight:600;font-family:var(--mono)}
+.sev-high{background:var(--red-bg);color:var(--red)}
+.sev-medium{background:var(--amber-bg);color:var(--amber)}
+.sev-low{background:var(--green-bg);color:var(--green)}
+.sev-pos{background:var(--green-bg);color:var(--green)}
+
+/* Score table bars */
+.score-bar-row td:last-child{min-width:160px}
+.bar-wrap{display:flex;align-items:center;gap:8px}
+.bar-track{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;background:var(--yellow);transition:width .8s ease}
+.bar-num{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--yellow-dark);min-width:28px}
+
+/* Confidence badge */
+.conf-row{display:flex;align-items:flex-start;gap:14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px 18px}
+.conf-badge{flex-shrink:0;background:var(--amber-bg);color:var(--amber);font-family:var(--mono);font-size:12px;font-weight:600;padding:4px 10px;border-radius:5px;border:1px solid #F5D898}
+.conf-text{font-size:13px;color:var(--text2);line-height:1.6}
+.conf-text strong{color:var(--text)}
+
+/* Inputs list */
+.inputs-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.input-tag{background:var(--bg);border:1px solid var(--border2);border-radius:5px;padding:5px 12px;font-size:12px;font-family:var(--mono);color:var(--text2)}
+
+/* Footer */
+.report-footer{background:var(--bg);border-top:1px solid var(--border);padding:14px 36px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.report-footer-l{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.report-footer-r{font-family:var(--mono);font-size:11px;color:var(--muted)}
+
+.page-footer{text-align:center;font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:32px;letter-spacing:.04em}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">eko <span style="font-weight:300;color:var(--muted);font-size:16px;margin-left:2px">credit</span></div>
+  <div class="nav-tag">MSME INTELLIGENCE</div>
+</nav>
+
+<div class="page">
+
+  <!-- Hero -->
+  <div class="hero">
+    <h1>MSME Credit Intelligence Agent</h1>
+    <p>5-stage AI underwriting pipeline · Cash-flow based lending analysis · India MSME segments</p>
+  </div>
+
+  <!-- Input -->
+  <div class="input-card">
+    <div class="section-label">Analysis Parameters</div>
+    <div class="field-label">Groq API Key</div>
+    <input type="password" id="apiKey" placeholder="gsk_..." />
+    <div class="grid2" style="margin-top:14px">
+      <div>
+        <div class="field-label">Sector</div>
+        <input type="text" id="sector" placeholder="e.g. Street food vendors" value="Street food vendors" />
+      </div>
+      <div>
+        <div class="field-label">Geography</div>
+        <input type="text" id="geography" placeholder="e.g. Tier-2 cities, UP" value="Tier-2 cities, Uttar Pradesh" />
+      </div>
+    </div>
+    <button class="run-btn" id="runBtn" onclick="runPipeline()">Run Credit Analysis →</button>
+  </div>
+
+  <!-- Error -->
+  <div class="err" id="errBox"></div>
+
+  <!-- Pipeline -->
+  <div class="pipeline" id="pipeline">
+    <div class="section-label">Pipeline executing</div>
+    <div class="pipe-steps">
+      <div class="step" id="s0"><div class="step-dot">1</div><div class="step-name">Segment Profiling</div><div class="step-sub">business model · income type</div></div>
+      <div class="step" id="s1"><div class="step-dot">2</div><div class="step-name">Cash Flow Reasoning</div><div class="step-sub">volatility · liquidity stress</div></div>
+      <div class="step" id="s2"><div class="step-dot">3</div><div class="step-name">Contextual Signals</div><div class="step-sub">UPI · inflation · demand</div></div>
+      <div class="step" id="s3"><div class="step-dot">4</div><div class="step-name">EMI Mismatch Analysis</div><div class="step-sub">repayment structure fit</div></div>
+      <div class="step" id="s4"><div class="step-dot">5</div><div class="step-name">Credit Structure</div><div class="step-sub">recommendation · risk rating</div></div>
+      <div class="step" id="s5"><div class="step-dot">✦</div><div class="step-name">Report Generation</div><div class="step-sub">synthesising all agents</div></div>
+    </div>
+  </div>
+
+  <!-- Report -->
+  <div class="report" id="report">
+    <div class="report-topbar">
+      <div class="report-status">Credit memo generated</div>
+      <button class="copy-btn" onclick="copyRaw()">Copy raw text</button>
+    </div>
+
+    <div class="report-shell">
+      <!-- Header band -->
+      <div class="report-header-band">
+        <div class="sector-tag">Credit Intelligence Report</div>
+        <h2 id="r-title">—</h2>
+        <div class="meta">
+          <span id="r-geo">—</span>
+          <span id="r-date">—</span>
+          <span>Powered by Groq · llama-3.3-70b</span>
+        </div>
+      </div>
+
+      <!-- Score band -->
+      <div class="score-band">
+        <div class="score-cell">
+          <div class="score-val" id="sc-viability">—</div>
+          <div class="score-lbl">VIABILITY SCORE / 10</div>
+        </div>
+        <div class="score-cell">
+          <div class="score-val" id="sc-risk">—</div>
+          <div class="score-lbl">RISK RATING</div>
+        </div>
+        <div class="score-cell">
+          <div class="score-val" id="sc-confidence">—</div>
+          <div class="score-lbl">CONFIDENCE LEVEL</div>
+        </div>
+      </div>
+
+      <!-- Body -->
+      <div class="report-body" id="reportBody"></div>
+
+      <!-- Footer -->
+      <div class="report-footer">
+        <div class="report-footer-l">eko · msme credit intelligence agent</div>
+        <div class="report-footer-r" id="r-footer-date">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">eko credit intelligence · multi-agent underwriting pipeline</div>
+</div>
+
+<script>
+const SYSTEM = `You are an Embedded Credit Intelligence Agent for MSME lending analysis in India.
+Think like a rural credit underwriter and fintech product strategist, not a generic business analyst.
+Prioritize: cash flow alignment, repayment feasibility, seasonality, income volatility.
+Avoid generic banking assumptions. Do not assume traditional EMI structures are always appropriate.
+Be concise, analytical, memo-style — not explanatory or educational.
+
+CRITICAL REASONING INSTRUCTIONS:
+- Avoid generic or middle-ground conclusions. Do not default to "moderate risk" unless strongly justified with specific evidence.
+- Differentiate aggressively between sectors based on actual economic behavior, not surface-level categorization.
+- Identify the PRIMARY economic driver of cash flow instability — e.g. tourism dependence, inventory cycles, trend sensitivity, weather dependency, festival-driven demand, supply chain shocks, margin compression.
+- For every segment: identify one structural strength AND one structural weakness, and explain the tension between them.
+- Explain what makes this segment fundamentally different from a standard salaried borrower.
+- Generate at least one non-obvious insight that would matter to a credit or product team — something that does NOT repeat standard financial analysis but reveals a hidden behavioral, operational, or economic pattern.
+- Your analysis must feel specific to the exact combination of sector and geography — not reusable across unrelated businesses.
+- Think in economic mechanisms, not descriptions. Not "volatile income" but WHY it is volatile and what that means for repayment timing.`;
+
+let rawText = "";
+
+async function groq(apiKey, prompt) {
+  const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method:"POST",
+    headers:{"Content-Type":"application/json","Authorization":"Bearer "+apiKey},
+    body:JSON.stringify({model:"llama-3.3-70b-versatile",messages:[{role:"system",content:SYSTEM},{role:"user",content:prompt}],temperature:0.7,max_tokens:1200})
+  });
+  if(!r.ok){const e=await r.json();throw new Error(e.error?.message||"API error "+r.status)}
+  return (await r.json()).choices[0].message.content.trim();
+}
+
+function step(i,s){const e=document.getElementById("s"+i);e.classList.remove("active","done");if(s)e.classList.add(s)}
+
+async function runPipeline(){
+  const key=document.getElementById("apiKey").value.trim();
+  const sector=document.getElementById("sector").value.trim();
+  const geo=document.getElementById("geography").value.trim();
+  if(!key||!sector||!geo){showErr("Please fill in all fields.");return}
+
+  document.getElementById("errBox").classList.remove("on");
+  document.getElementById("report").classList.remove("on");
+  document.getElementById("pipeline").classList.add("on");
+  document.getElementById("runBtn").disabled=true;
+  document.getElementById("runBtn").textContent="Analysing...";
+  for(let i=0;i<=5;i++)step(i,null);
+
+  try{
+    step(0,"active");
+    const seg=await groq(key,`Analyze this micro-entrepreneur segment for credit underwriting. Be specific and opinionated — not generic.
+Sector: ${sector} | Geography: ${geo}
+
+Cover exactly:
+- How cash actually enters this business — the specific revenue mechanism, not just "sells goods/services"
+- Income pattern AND the primary economic driver that creates that pattern (e.g. festival cycles, weather, tourism, trend sensitivity, inventory turnover)
+- The single biggest operating constraint that directly threatens repayment capacity
+- One structural strength AND one structural weakness unique to this sector+geography — explain the tension between them
+- How customer demand behavior translates into repayment risk or safety
+- One non-obvious insight a credit team would not expect about this segment
+
+Do NOT write generic business descriptions. Model the economic reality of THIS operator in THIS geography.
+Sharp analytical bullets only. No filler sentences.`);
+    step(0,"done");
+
+    step(1,"active");
+    const cf=await groq(key,`Based on this segment profile, analyze cash flow for underwriting:
+${seg}
+Provide: income stability assessment, revenue predictability, seasonal volatility periods, liquidity pressure windows, repayment stress probability.
+Also estimate these financial ranges for a typical operator in this segment:
+- Monthly revenue range (in INR lakhs)
+- Gross margin %
+- Net operating margin %
+- Rent as % of revenue
+- Monthly free cash flow estimate
+- Liquidity buffer (as multiple of fixed expenses)
+Classify volatility: Low / Medium / High. Be specific with numbers.`);
+    step(1,"done");
+
+    step(2,"active");
+    const sig=await groq(key,`Analyze contextual signals for this segment for embedded lending.
+Sector: ${sector} | Geography: ${geo}
+Evaluate: UPI/digital payment adoption rate, local demand cycle dependence, inflation/commodity exposure, regulatory sensitivity, demand resilience.
+List: key operating signals, positive indicators, risk indicators. Be specific.`);
+    step(2,"done");
+
+    step(3,"active");
+    const emi=await groq(key,`Based on this cash flow profile:
+${cf}
+Explain precisely why traditional monthly fixed-EMI lending fails or succeeds for this segment.
+Focus on: repayment timing mismatch, income unpredictability, liquidity stress windows, collection feasibility.
+Then specify the ideal repayment structure (frequency, flexibility, collection method).`);
+    step(3,"done");
+
+    step(4,"active");
+    const cs=await groq(key,`Generate a credit structure recommendation using all analyses.
+Segment: ${seg}
+Cash Flow: ${cf}
+Signals: ${sig}
+Provide exact recommendations for:
+1. Loan ticket size range (₹)
+2. Repayment frequency
+3. Moratorium period
+4. Max EMI-to-cashflow ratio
+5. Collection mechanism
+6. Risk management controls
+Give a viability score out of 10 (one decimal), risk rating (Low/Medium/High), and confidence level (Low/Moderate/High).`);
+    step(4,"done");
+
+    step(5,"active");
+    const report=await groq(key,`Generate a structured credit intelligence memo using JSON format ONLY. No markdown, no explanation outside JSON.
+
+Inputs:
+SECTOR: ${sector}
+GEOGRAPHY: ${geo}
+SEGMENT_PROFILE: ${seg}
+CASHFLOW: ${cf}
+SIGNALS: ${sig}
+EMI_ANALYSIS: ${emi}
+CREDIT_STRUCTURE: ${cs}
+
+Return ONLY valid JSON in this exact structure:
+{
+  "viability_score": "7.2",
+  "risk_rating": "Medium",
+  "confidence": "Moderate",
+  "executive_summary": "2-3 sentence memo-style summary",
+  "key_underwriting_insight": "1-2 sentence sharp insight about the key underwriting consideration",
+  "financial_snapshot": [
+    {"metric": "Monthly Revenue", "value": "₹X – ₹Y"},
+    {"metric": "Gross Margin", "value": "X% – Y%"},
+    {"metric": "Net Operating Margin", "value": "X% – Y%"},
+    {"metric": "Rent as % of Revenue", "value": "X% – Y%"},
+    {"metric": "Monthly Free Cash Flow", "value": "₹X – ₹Y"},
+    {"metric": "Liquidity Buffer", "value": "X.Xx – X.Xx fixed costs"},
+    {"metric": "Revenue Volatility", "value": "Low/Medium/High"},
+    {"metric": "Digital Payment Penetration", "value": "X%+"}
+  ],
+  "cashflow_analysis": "3-4 sentences of analytical prose",
+  "contextual_signals": "3-4 sentences of analytical prose",
+  "risk_matrix": [
+    {"factor": "Risk Factor Name", "severity": "High", "notes": "brief note"},
+    {"factor": "Risk Factor Name", "severity": "Medium", "notes": "brief note"},
+    {"factor": "Risk Factor Name", "severity": "Low", "notes": "brief note"},
+    {"factor": "Risk Factor Name", "severity": "High Positive", "notes": "brief note"},
+    {"factor": "Risk Factor Name", "severity": "Medium", "notes": "brief note"}
+  ],
+  "viability_breakdown": [
+    {"category": "Revenue Stability", "score": 7},
+    {"category": "Cash Flow Predictability", "score": 6},
+    {"category": "Digital Visibility", "score": 8},
+    {"category": "Seasonal Risk", "score": 5},
+    {"category": "Operational Resilience", "score": 7},
+    {"category": "Repayment Feasibility", "score": 7}
+  ],
+  "lending_structure": [
+    {"parameter": "Loan Ticket Size", "recommendation": "₹X – ₹Y"},
+    {"parameter": "Repayment Frequency", "recommendation": "Weekly"},
+    {"parameter": "Initial Moratorium", "recommendation": "X months"},
+    {"parameter": "Max EMI / Free Cash Flow", "recommendation": "<X%"},
+    {"parameter": "Collection Mechanism", "recommendation": "UPI-linked auto-debit"},
+    {"parameter": "Monitoring Frequency", "recommendation": "Monthly"},
+    {"parameter": "Flexibility Clause", "recommendation": "Seasonal adjustment permitted"}
+  ],
+  "confidence_reason": "1-2 sentences on why confidence is at this level and what data would improve it",
+  "data_inputs": ["input1","input2","input3","input4","input5","input6"],
+  "strategic_notes": "3-4 sentences of strategic lending notes"
+}`);
+    step(5,"done");
+
+    rawText = [seg,cf,sig,emi,cs,report].join("\n\n---\n\n");
+    renderReport(sector, geo, report);
+
+  }catch(e){
+    showErr(e.message);
+    document.getElementById("pipeline").classList.remove("on");
+  }
+  document.getElementById("runBtn").disabled=false;
+  document.getElementById("runBtn").textContent="Run Credit Analysis →";
+}
+
+function renderReport(sector, geo, jsonText){
+  let d;
+  try{
+    const clean = jsonText.replace(/```json|```/g,"").trim();
+    d = JSON.parse(clean);
+  }catch(e){
+    showErr("Could not parse report JSON. Try running again.");
+    return;
+  }
+
+  // Top metadata
+  document.getElementById("r-title").textContent = sector;
+  document.getElementById("r-geo").textContent = "📍 " + geo;
+  const now = new Date();
+  const ds = now.toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"});
+  document.getElementById("r-date").textContent = "📅 " + ds;
+  document.getElementById("r-footer-date").textContent = "Generated " + ds;
+
+  // Score band
+  const vs = document.getElementById("sc-viability");
+  vs.textContent = d.viability_score;
+  const sc = parseFloat(d.viability_score);
+  vs.className = "score-val " + (sc>=7?"green":sc>=5?"amber":"red");
+
+  const rr = document.getElementById("sc-risk");
+  rr.textContent = d.risk_rating;
+  rr.className = "score-val " + (d.risk_rating==="Low"?"green":d.risk_rating==="High"?"red":"amber");
+
+  const cf2 = document.getElementById("sc-confidence");
+  cf2.textContent = d.confidence;
+  cf2.className = "score-val " + (d.confidence==="High"?"green":d.confidence==="Low"?"red":"amber");
+
+  // Build body HTML
+  let html = "";
+
+  // 1. Executive Summary
+  html += section(1,"Executive Summary",`<div class="r-prose"><p>${d.executive_summary}</p></div>
+<div class="insight-box"><div class="ins-label">Key Underwriting Insight</div>${d.key_underwriting_insight}</div>`);
+
+  // 2. Financial Snapshot
+  html += section(2,"Financial Snapshot",`<div class="r-table-wrap"><table>
+<thead><tr><th>Metric</th><th>Estimated Range</th></tr></thead>
+<tbody>${d.financial_snapshot.map(r=>`<tr><td>${r.metric}</td><td>${r.value}</td></tr>`).join("")}</tbody>
+</table></div>`);
+
+  // 3. Cash Flow Analysis
+  html += section(3,"Cash Flow Analysis",`<div class="r-prose"><p>${d.cashflow_analysis}</p></div>`);
+
+  // 4. Contextual Signals
+  html += section(4,"Contextual Signals",`<div class="r-prose"><p>${d.contextual_signals}</p></div>`);
+
+  // 5. Risk Matrix
+  html += section(5,"Risk Matrix",`<div class="r-table-wrap"><table>
+<thead><tr><th>Risk Factor</th><th>Severity</th><th>Notes</th></tr></thead>
+<tbody>${d.risk_matrix.map(r=>`<tr><td>${r.factor}</td><td>${sevBadge(r.severity)}</td><td>${r.notes}</td></tr>`).join("")}</tbody>
+</table></div>`);
+
+  // 6. Credit Viability Score
+  const avg = (d.viability_breakdown.reduce((a,b)=>a+b.score,0)/d.viability_breakdown.length).toFixed(1);
+  html += section(6,"Credit Viability Score",`<div style="margin-bottom:12px;font-size:22px;font-weight:700;color:var(--yellow-dark);font-family:var(--mono)">
+  ${d.viability_score} <span style="font-size:14px;color:var(--muted);font-weight:400">/ 10</span></div>
+<div class="r-table-wrap"><table>
+<thead><tr><th>Category</th><th>Score</th><th style="min-width:160px">Rating</th></tr></thead>
+<tbody>${d.viability_breakdown.map(r=>`<tr class="score-bar-row"><td>${r.category}</td><td style="font-family:var(--mono);font-weight:600">${r.score}/10</td><td><div class="bar-wrap"><div class="bar-track"><div class="bar-fill" style="width:${r.score*10}%"></div></div><div class="bar-num">${r.score}</div></div></td></tr>`).join("")}</tbody>
+</table></div>`);
+
+  // 7. Recommended Lending Structure
+  html += section(7,"Recommended Lending Structure",`<div class="r-table-wrap"><table>
+<thead><tr><th>Parameter</th><th>Recommendation</th></tr></thead>
+<tbody>${d.lending_structure.map(r=>`<tr><td>${r.parameter}</td><td>${r.recommendation}</td></tr>`).join("")}</tbody>
+</table></div>`);
+
+  // 8. Confidence Level
+  html += section(8,"Confidence Level",`<div class="conf-row">
+<div class="conf-badge">${d.confidence}</div>
+<div class="conf-text">${d.confidence_reason}</div>
+</div>`);
+
+  // 9. Data Inputs
+  html += section(9,"Data Inputs Considered",`<div class="inputs-grid">${d.data_inputs.map(i=>`<div class="input-tag">${i}</div>`).join("")}</div>`);
+
+  // 10. Strategic Notes
+  html += section(10,"Strategic Lending Notes",`<div class="r-prose"><p>${d.strategic_notes}</p></div>`);
+
+  document.getElementById("reportBody").innerHTML = html;
+  document.getElementById("report").classList.add("on");
+  document.getElementById("report").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function section(num, title, content){
+  return `<div class="r-section">
+<div class="r-h"><div class="r-h-num">${num}</div><div class="r-h-title">${title}</div></div>
+<div class="r-divider"></div>
+${content}
+</div>`;
+}
+
+function sevBadge(s){
+  const map={"High":"sev-high","Medium":"sev-medium","Low":"sev-low","High Positive":"sev-pos"};
+  return `<span class="sev ${map[s]||'sev-medium'}">${s}</span>`;
+}
+
+function showErr(msg){
+  const b=document.getElementById("errBox");
+  b.textContent="Error: "+msg;
+  b.classList.add("on");
+}
+
+function copyRaw(){
+  navigator.clipboard.writeText(rawText).then(()=>{
+    const b=document.querySelector(".copy-btn");
+    b.textContent="Copied!";
+    setTimeout(()=>b.textContent="Copy raw text",2000);
+  });
+}
+</script>
+</body>
+</html>
